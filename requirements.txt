@@ -1,0 +1,8 @@
+ipython
+matplotlib
+numpy
+tensorflow
+image
+Pillow
+jupyter
+images2gif

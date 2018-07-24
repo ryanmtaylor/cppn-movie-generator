@@ -21,6 +21,7 @@ sampler = Sampler(z_dim = 4, c_dim = 1, scale = 8.0, net_size = 32)
 
 '''
 
+import os
 import numpy as np
 import tensorflow as tf
 import math
@@ -34,7 +35,7 @@ import images2gif
 from images2gif import writeGif
 
 mgc = get_ipython().magic
-mgc(u'matplotlib inline')
+mgc(u'matplotlib osx')
 pylab.rcParams['figure.figsize'] = (10.0, 10.0)
 
 class Sampler():
@@ -91,8 +92,8 @@ class Sampler():
       img_data = np.array(img_data.reshape((y_dim, x_dim))*255.0, dtype=np.uint8)
     im = Image.fromarray(img_data)
     return im
-  def save_anim_gif(self, z1, z2, filename, n_frame = 10, duration1 = 0.5, \
-                    duration2 = 1.0, duration = 0.1, x_dim = 512, y_dim = 512, scale = 10.0, reverse = True):
+  def save_anim_gif(self, z1, z2, filename, n_frame = 240, duration1 = 0.5, \
+                    duration2 = 1.0, duration = 0.1, x_dim = 1920, y_dim = 1080, scale = 10.0, reverse = True):
     '''
     this saves an animated gif from two latent states z1 and z2
     n_frame: number of states in between z1 and z2 morphing effect, exclusive of z1 and z2
@@ -114,3 +115,20 @@ class Sampler():
       durations = durations + [duration]*n_frame + [duration1]
     print "writing gif file..."
     writeGif(filename, images, duration = durations)
+
+  def save_anim_mp4(self, filename, n_frame = 120, x_dim = 1920, y_dim = 1080, scale = 10.0):
+    z1 = self.generate_z()
+    z2 = self.generate_z()
+    path_folder = 'output/%s' % filename
+    if not os.path.exists(path_folder):
+      print 'creating path: %s' % path_folder
+      os.makedirs(path_folder)
+
+    delta_z = (z2-z1) / (n_frame+1)
+    total_frames = n_frame + 2
+    for i in range(total_frames):
+      z = z1 + delta_z*float(i)
+      img = self.to_image(self.generate(z, x_dim, y_dim, scale))
+      img.save('%s/%s-%04d.png' % (path_folder, filename, i))
+      print "processing image %d/%d" % (i, n_frame)
+    os.system('ffmpeg -i %s/%s-%%04d.png -c:v libx264 -crf 0 -preset veryslow -framerate 30 %s/%s.mp4' % (path_folder, filename, path_folder, filename))
