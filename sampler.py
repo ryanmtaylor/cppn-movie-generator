@@ -116,7 +116,7 @@ class Sampler():
     print "writing gif file..."
     writeGif(filename, images, duration = durations)
 
-  def save_anim_mp4(self, filename, n_frame = 120, x_dim = 1920, y_dim = 1080, scale = 10.0):
+  def save_anim_mp4(self, filename, n_frame = 120, x_dim = 1920, y_dim = 1080, scale = 10.0, reverse = True):
     z1 = self.generate_z()
     z2 = self.generate_z()
     path_folder = 'output/%s' % filename
@@ -132,3 +132,26 @@ class Sampler():
       img.save('%s/%s-%04d.png' % (path_folder, filename, i))
       print "processing image %d/%d" % (i, n_frame)
     os.system('ffmpeg -i %s/%s-%%04d.png -c:v libx264 -crf 0 -preset veryslow -framerate 30 %s/%s.mp4' % (path_folder, filename, path_folder, filename))
+    if(reverse):
+        os.system('ffmpeg -i %s/%s.mp4 -filter_complex "[0:v]reverse,fifo[r];[0:v][r] concat=n=2:v=1 [v]" -map "[v]" %s/%s-looped.mp4' % (path_folder, filename, path_folder, filename))
+  #
+  # def save_anim_mp4_double(self, filename, n_frame = 120, x_dim = 1920, y_dim = 1080, scale = 10.0, reverse = True, z1 = None, z2 = None, iterations = 0):
+  #   z1 = z1 || self.generate_z()
+  #   z2 = z2 || self.generate_z()
+  #   path_folder = 'output/%s' % filename
+  #   if not os.path.exists(path_folder):
+  #     print 'creating path: %s' % path_folder
+  #     os.makedirs(path_folder)
+  #
+  #   delta_z = (z2-z1) / (n_frame+1)
+  #   total_frames = n_frame + 2
+  #   for i in range(total_frames):
+  #     z = z1 + delta_z*float(i)
+  #     img = self.to_image(self.generate(z, x_dim, y_dim, scale))
+  #     img.save('%s/%s-%04d.png' % (path_folder, filename, i))
+  #     print "processing image %d/%d" % (i, n_frame)
+  #   os.system('ffmpeg -i %s/%s-%%04d.png -c:v libx264 -crf 0 -preset veryslow -framerate 30 %s/%s.mp4' % (path_folder, filename, path_folder, filename))
+  #   if(reverse):
+  #       os.system('ffmpeg -i %s/%s.mp4 -filter_complex "[0:v]reverse,fifo[r];[0:v][r] concat=n=2:v=1 [v]" -map "[v]" %s/%s-looped.mp4' % (path_folder, filename, path_folder, filename))
+  #   # if(iterations > 0):
+  #   #     self.
