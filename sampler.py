@@ -34,6 +34,8 @@ import matplotlib.pyplot as plt
 import images2gif
 from images2gif import writeGif
 
+import pprint as pp
+
 mgc = get_ipython().magic
 mgc(u'matplotlib osx')
 pylab.rcParams['figure.figsize'] = (10.0, 10.0)
@@ -134,24 +136,48 @@ class Sampler():
     os.system('ffmpeg -i %s/%s-%%04d.png -c:v libx264 -crf 0 -preset veryslow -framerate 30 %s/%s.mp4' % (path_folder, filename, path_folder, filename))
     if(reverse):
         os.system('ffmpeg -i %s/%s.mp4 -filter_complex "[0:v]reverse,fifo[r];[0:v][r] concat=n=2:v=1 [v]" -map "[v]" %s/%s-looped.mp4' % (path_folder, filename, path_folder, filename))
-  #
-  # def save_anim_mp4_double(self, filename, n_frame = 120, x_dim = 1920, y_dim = 1080, scale = 10.0, reverse = True, z1 = None, z2 = None, iterations = 0):
-  #   z1 = z1 || self.generate_z()
-  #   z2 = z2 || self.generate_z()
-  #   path_folder = 'output/%s' % filename
-  #   if not os.path.exists(path_folder):
-  #     print 'creating path: %s' % path_folder
-  #     os.makedirs(path_folder)
-  #
-  #   delta_z = (z2-z1) / (n_frame+1)
-  #   total_frames = n_frame + 2
-  #   for i in range(total_frames):
-  #     z = z1 + delta_z*float(i)
-  #     img = self.to_image(self.generate(z, x_dim, y_dim, scale))
-  #     img.save('%s/%s-%04d.png' % (path_folder, filename, i))
-  #     print "processing image %d/%d" % (i, n_frame)
-  #   os.system('ffmpeg -i %s/%s-%%04d.png -c:v libx264 -crf 0 -preset veryslow -framerate 30 %s/%s.mp4' % (path_folder, filename, path_folder, filename))
-  #   if(reverse):
-  #       os.system('ffmpeg -i %s/%s.mp4 -filter_complex "[0:v]reverse,fifo[r];[0:v][r] concat=n=2:v=1 [v]" -map "[v]" %s/%s-looped.mp4' % (path_folder, filename, path_folder, filename))
-  #   # if(iterations > 0):
-  #   #     self.
+
+  def save_anim_mp4_2(self, filename, zs = [], n_frame = 360, x_dim = 1920, y_dim = 1080, scale = 10.0, count = 0):
+    path_folder = 'output/%s' % filename
+    if not os.path.exists(path_folder):
+      print 'creating path: %s' % path_folder
+      os.makedirs(path_folder)
+
+    if(count <= 0):
+        # tolist().map(lambda x: "%.4f" % x)
+        formatted_zs = map((lambda x: "%.3f" % x[0,0]), zs)
+        print "%d vectors: %s" % (len(zs), ", ".join(formatted_zs))
+        print "%d images total" % (len(zs) * n_frame)
+        print "---"
+
+    # print ">> %d frames remaining" % (len(zs) * (n_frame + 1) + 1)
+    if(len(zs) <= 1):
+        z = zs[0]
+        img = self.to_image(self.generate(z, x_dim, y_dim, scale))
+        img.save('%s/%s-%04d.png' % (path_folder, filename, count))
+        print ">> %d : %.3f" % (count, z[0,0])
+        print "---"
+        print "%d images rendered" % count
+        print "---"
+        os.system('ffmpeg -i %s/%s-%%04d.png -c:v libx264 -crf 0 -preset veryslow -framerate 30 %s/%s.mp4' % (path_folder, filename, path_folder, filename))
+        return
+
+    z1 = zs.pop(0)
+    z2 = zs[0]
+
+    print ">> (%.3f to %.3f) step #%d" % (z1[0,0], z2[0,0], len(zs))
+
+    delta_z = (z2-z1) / (n_frame + 1)
+    total_frames = n_frame + 1
+
+    for i in range(total_frames):
+      z = z1 + delta_z*float(i)
+      img = self.to_image(self.generate(z, x_dim, y_dim, scale))
+      img.save('%s/%s-%04d.png' % (path_folder, filename, i + count))
+
+      z_output = ", ".join(str(x) for x in z[0].tolist())
+      print ">> %d : %.3f" % (i + count, z[0,0])
+    self.save_anim_mp4_2(filename, zs, n_frame, x_dim, y_dim, scale, (i + count) + 1)
+
+  def generate_zs(self, num):
+    return map(lambda x: self.generate_z(), range(num))
