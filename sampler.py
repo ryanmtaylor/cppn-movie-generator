@@ -19,6 +19,16 @@ usage:
 
 sampler = Sampler(z_dim = 4, c_dim = 1, scale = 8.0, net_size = 32)
 
+---
+
+%run -i sampler.py
+sampler = Sampler(z_dim = 4, c_dim = 1, scale = 8.0, net_size = 32)
+zs = sampler.generate_zs(10)
+sampler.save_anim_mp4_loop('machop-01', zs)
+
+---
+
+docker run -it --rm -v /tmp/butterflow:/butterflow saren/butterflow butterflow -m -v /butterflow/name.mp4 -o /butterflow/name-out.mp4
 '''
 
 import os
@@ -206,8 +216,10 @@ class Sampler():
         print "---"
         print "%d images rendered" % count
         print "---"
-        os.system('ffmpeg -i %s/%s-%%04d.png -c:v libx264 -crf 0 -preset veryslow -framerate 30 %s/%s.mp4' % (path_folder, filename, path_folder, filename))
+        os.system('ffmpeg -i %s/%s-%%04d.png -c:v libx264 -pix_fmt yuv420p -crf 0 -preset veryslow -framerate 30 %s/%s.mp4' % (path_folder, filename, path_folder, filename))
         # os.system('ffmpeg -i %s/%s.mp4 -filter "minterpolate='mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=90" %s/%s-interpolated-90fps.mp4')
+        # os.system('docker cp %s/%s.mp4 boring_hamilton:/tmp/%s-docker.mp4')
+        # os.system('docker run ')
         return
 
     z1 = zs.pop(0)
